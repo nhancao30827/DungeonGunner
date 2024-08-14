@@ -8,6 +8,6 @@ namespace DungGunCore
     public class RoomNodeTypeListSO : ScriptableObject
     {
         [Tooltip("Store all room node types in the game")]
-        public List<RoomNodeTypeSO> roomNodeTypeList;
+        public List<RoomNodeTypeSO> typeList;
     }
 }

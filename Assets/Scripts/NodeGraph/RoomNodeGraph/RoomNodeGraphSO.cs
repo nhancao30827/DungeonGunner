@@ -8,7 +8,7 @@ namespace DungGunCore
     public class RoomNodeGraphSO : ScriptableObject
     {
         [HideInInspector] public RoomNodeTypeListSO roomNodeTypeList;
-        [HideInInspector] public List<RoomNodeTypeSO> roomNodeTypes = new List<RoomNodeTypeSO>();
+        [HideInInspector] public List<RoomNodeSO> roomNodeList = new List<RoomNodeSO>();
         [HideInInspector] public Dictionary<string, RoomNodeSO> roomNodeDict = new Dictionary<string, RoomNodeSO>();
     }
 }

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5997279291dfaf141989282e3b271f2e, type: 3}
+  m_Name: RoomNodeGraph
+  m_EditorClassIdentifier: 
+  roomNodeTypeList: {fileID: 0}
+  roomNodeList:
+  - {fileID: 3904627350434722900}
+--- !u!114 &3904627350434722900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f773c2c68a9a784e870d449e303e14f, type: 3}
+  m_Name: Room Node
+  m_EditorClassIdentifier: 
+  id: c28c0bb1-d16f-4930-ad99-9d951db8120f
+  parentsID: []
+  childrenID: []
+  roomNodeGraph: {fileID: 11400000}
+  roomNodeTypeList: {fileID: 11400000, guid: fc9d55df2bdc9e643bc2273a4d4a2773, type: 2}
+  rect:
+    serializedVersion: 2
+    x: 428
+    y: 246
+    width: 160
+    height: 75
+  roomNodeType: {fileID: 11400000, guid: 53905af49d55b6d46b39824db90e135a, type: 2}

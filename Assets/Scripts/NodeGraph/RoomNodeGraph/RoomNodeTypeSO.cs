@@ -4,15 +4,15 @@ using UnityEngine;
 
 namespace DungGunCore
 {
-    [CreateAssetMenu(fileName = "RoomNodeType", menuName = "Scriptable Objects/Dungeon/Room Node Type")]
+    [CreateAssetMenu(fileName = "RoomNodeType_", menuName = "Scriptable Objects/Dungeon/Room Node Type")]
     public class RoomNodeTypeSO : ScriptableObject
     {
         public string roomNodeTypeName;
 
+        public bool displayInEditor = true;
+
         [Header("Select node type")]
         [Space(10)]
-
-        public bool displayInEditor = true;
 
         public bool cooridor;
 
@@ -24,7 +24,7 @@ namespace DungGunCore
 
         public bool bossRoom;
 
-        public bool none;
+        public bool isNone;
 
         #region CHECK VALID
 #if UNITY_EDITOR  //Make codes in this #if wont be compiled when game build
