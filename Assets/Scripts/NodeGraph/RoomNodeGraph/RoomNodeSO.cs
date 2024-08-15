@@ -13,8 +13,11 @@ namespace DungGunCore
         [HideInInspector] public RoomNodeGraphSO roomNodeGraph;
         [HideInInspector] public RoomNodeTypeListSO roomNodeTypeList;
         [HideInInspector] public Rect rect;
+        [HideInInspector] public bool isSelected = false;
+        [HideInInspector] public bool isDragging = false;
 
         public RoomNodeTypeSO roomNodeType;
+
 
         /// <summary>
         /// Create a new node
@@ -51,6 +54,54 @@ namespace DungGunCore
                 EditorUtility.SetDirty(this);
             }
             GUILayout.EndArea();
+        }
+
+        /// <summary>
+        /// Handle events emitted by the node
+        /// </summary>
+        /// <param name="e"></param>
+        public void HandleNodeEvents(Event e)
+        {
+            switch (e.type)
+            {
+                case EventType.MouseDown:
+                    HandleMouseDownEvent(e);
+                    break;
+
+                case EventType.MouseUp:
+                    HandleMouseUpEvent();
+                    break;
+
+                case EventType.MouseDrag:
+                    HandleMouseDragEvent(e);
+                    break;
+            }
+        }
+
+        private void HandleMouseDownEvent(Event e)
+        {
+            Selection.activeObject = this;
+
+            if (e.button == 0 ) // Left click
+            {
+                isSelected = !isSelected;
+            }
+        }
+
+        private void HandleMouseUpEvent()
+        {
+            if (isDragging == true)
+            {
+                isDragging = false;
+            }
+        }
+
+        private void HandleMouseDragEvent(Event e)
+        {
+                rect.position += e.delta;
+                isDragging = true;
+                e.Use();
+                EditorUtility.SetDirty(this);
         }
     }
 }

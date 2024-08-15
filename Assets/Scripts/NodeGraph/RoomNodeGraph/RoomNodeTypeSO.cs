@@ -14,15 +14,15 @@ namespace DungGunCore
         [Header("Select node type")]
         [Space(10)]
 
-        public bool cooridor;
+        public bool isCooridor;
 
-        public bool cooridorHorizontal;
+        public bool isCooridorHorizontal;
 
-        public bool cooridorVertical;
+        public bool isCooridorVertical;
 
-        public bool entrance;
+        public bool isEntrance;
 
-        public bool bossRoom;
+        public bool isBossRoom;
 
         public bool isNone;
 

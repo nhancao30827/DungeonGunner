@@ -13,6 +13,7 @@ namespace DungGunCore
     {
         private GUIStyle _nodeStyle;  
         private static RoomNodeGraphSO _roomNodeGraph;
+        private RoomNodeSO _hoverRoomNode;
         private RoomNodeTypeListSO _roomNodeTypeList;
 
         #region NODE LAYOUTS
@@ -70,26 +71,44 @@ namespace DungGunCore
         {
            if (_roomNodeGraph != null)
            {
-               ProcessEvents(Event.current);
+               HandleEventDetection(Event.current);
                DrawRoomNodes();
            }
 
-           if (GUI.changed) Repaint();
+           if (GUI.changed)
+           {
+                Repaint();
+           }
+        }
+
+        private void HandleEventDetection(Event e)
+        {
+            if (_hoverRoomNode == null || _hoverRoomNode.isDragging == false)
+            {
+                _hoverRoomNode = MouseOverNode(e);
+            }
+
+            if (_hoverRoomNode == null)
+            {
+                ProcessGraphEvents(e);
+            }
+
+            else
+            {
+                _hoverRoomNode.HandleNodeEvents(e);
+            }
         }
 
         /// <summary>
         /// Handle events happening in the node graph editor
         /// </summary>
         /// <param name="e">Type of events happen in the editor</param>
-        private void ProcessEvents(Event e)
+        private void ProcessGraphEvents(Event e)
         {
             switch (e.type)
             {
                 case EventType.MouseDown:
-                    MouseDownEvent(e);
-                    break;
-
-                case EventType.KeyDown:
+                    HandleMouseDownEven(e);
                     break;
 
                 default:
@@ -97,18 +116,35 @@ namespace DungGunCore
             }
         }
 
-        private void MouseDownEvent(Event currentEvent)
+        private RoomNodeSO MouseOverNode(Event e)
+        {
+            foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
+            {
+                if (roomNode.rect.Contains(e.mousePosition))
+                {
+                    return roomNode;
+                }
+            }
+            return null;
+        }
+
+
+        private void HandleMouseDownEven(Event e)
         {
 
-           if (currentEvent.button == 1) // Right click
+           if (e.button == 1) // Right click
             {
-                ShowContextMenu(currentEvent.mousePosition);
+                ShowContextMenu(e.mousePosition);
             }
         }
 
+        /// <summary>
+        /// Create custom context menus and dropdown menus
+        /// </summary>
+        /// <param name="mousePosition"></param>
         private void ShowContextMenu(Vector2 mousePosition)
         {
-            GenericMenu contextMenu = new GenericMenu(); //Create custom context menus and dropdown menus
+            GenericMenu contextMenu = new GenericMenu(); 
             contextMenu.AddItem(new GUIContent("Add Room Node"), false, () => { AddRoomNode(mousePosition); });
             contextMenu.ShowAsContext();
         }
