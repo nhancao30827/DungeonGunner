@@ -7,9 +7,9 @@ namespace DungGunCore
 {
     public class RoomNodeSO : ScriptableObject
     {
-        [HideInInspector] public string id;
-        [HideInInspector] public List<string> parentsID= new List<string>();
-        [HideInInspector] public List<string> childrenID = new List<string>();
+         public string id;
+         public List<string> parentsID= new List<string>();
+         public List<string> childrenID = new List<string>();
         [HideInInspector] public RoomNodeGraphSO roomNodeGraph;
         [HideInInspector] public RoomNodeTypeListSO roomNodeTypeList;
         [HideInInspector] public Rect rect;
@@ -32,8 +32,7 @@ namespace DungGunCore
             this.name = "Room Node";
             this.roomNodeGraph = roomNodeGraph;
             this.roomNodeType = roomNodeType;
-
-            roomNodeTypeList = GameResources.Instance.roomNodeTypeList;
+            this.roomNodeTypeList = GameResources.Instance.roomNodeTypeList;
         }
 
         /// <summary>
@@ -79,12 +78,16 @@ namespace DungGunCore
         }
 
         private void HandleMouseDownEvent(Event e)
-        {
-            Selection.activeObject = this;
-
+        {      
             if (e.button == 0 ) // Left click
             {
+                Selection.activeObject = this;
                 isSelected = !isSelected;
+            }
+
+            if (e.button == 1) // Right click
+            {
+                roomNodeGraph.SetNodeConnectionLine(this, e.mousePosition);
             }
         }
 
@@ -102,6 +105,28 @@ namespace DungGunCore
                 isDragging = true;
                 e.Use();
                 EditorUtility.SetDirty(this);
+        }
+
+        public bool AddChildID(string childId)
+        {
+            if (!childrenID.Contains(childId))
+            {
+                childrenID.Add(childId);
+                return true;
+            }
+            Debug.Log("Child already exists");
+            return false;
+        }
+
+        public bool AddParentID(string parentId)
+        {
+            if (!parentsID.Contains(parentId))
+            {
+                parentsID.Add(parentId);
+                return true;
+            }
+            Debug.Log("Parent already exists");
+            return false;
         }
     }
 }

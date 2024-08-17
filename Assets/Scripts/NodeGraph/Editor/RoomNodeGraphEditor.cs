@@ -12,9 +12,12 @@ namespace DungGunCore
     public class RoomNodeGraphEditor : EditorWindow
     {
         private GUIStyle _nodeStyle;  
+        
         private static RoomNodeGraphSO _roomNodeGraph;
         private RoomNodeSO _hoverRoomNode;
         private RoomNodeTypeListSO _roomNodeTypeList;
+        
+        private float _connectionLineWidth = 3f;
 
         #region NODE LAYOUTS
         private const float _nodeWidth = 160f;
@@ -50,7 +53,7 @@ namespace DungGunCore
                 _roomNodeGraph = roomNodeGraph;
                 return true;
             }
-            Debug.Log("Not a RoomNodeGraphSO");
+            
             return false;
         }
 
@@ -69,9 +72,12 @@ namespace DungGunCore
         // Handle creating nodes
         private void OnGUI()
         {
+
            if (_roomNodeGraph != null)
            {
+               DrawDraggedLine();
                HandleEventDetection(Event.current);
+               DrawNodeConnections();
                DrawRoomNodes();
            }
 
@@ -81,16 +87,32 @@ namespace DungGunCore
            }
         }
 
+        private void DrawDraggedLine()
+        {
+            if (_roomNodeGraph.endOfLinePosition != Vector2.zero)
+            {
+                Handles.DrawBezier(
+                    _roomNodeGraph.startNode.rect.center,
+                    _roomNodeGraph.endOfLinePosition,
+                    _roomNodeGraph.startNode.rect.center,
+                    _roomNodeGraph.endOfLinePosition,
+                    Color.white,
+                    null,
+                    _connectionLineWidth
+                );
+            }
+        }
+
         private void HandleEventDetection(Event e)
         {
             if (_hoverRoomNode == null || _hoverRoomNode.isDragging == false)
             {
-                _hoverRoomNode = MouseOverNode(e);
+                _hoverRoomNode = HandleMouseOverNode(e);
             }
 
-            if (_hoverRoomNode == null)
+            if (_hoverRoomNode == null || _roomNodeGraph.startNode != null)
             {
-                ProcessGraphEvents(e);
+                HandleGraphEvents(e);
             }
 
             else
@@ -103,12 +125,20 @@ namespace DungGunCore
         /// Handle events happening in the node graph editor
         /// </summary>
         /// <param name="e">Type of events happen in the editor</param>
-        private void ProcessGraphEvents(Event e)
+        private void HandleGraphEvents(Event e)
         {
             switch (e.type)
             {
                 case EventType.MouseDown:
-                    HandleMouseDownEven(e);
+                    HandleMouseDownEvent(e);
+                    break;
+
+                case EventType.MouseUp:
+                    HandleMouseUpEvent(e);
+                    break;
+
+                case EventType.MouseDrag:
+                    HandleMouseDragEvent(e);
                     break;
 
                 default:
@@ -116,7 +146,12 @@ namespace DungGunCore
             }
         }
 
-        private RoomNodeSO MouseOverNode(Event e)
+        /// <summary>
+        /// Check if a node is hovered by the mouse cursor
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns>The node which is hovered</returns>
+        private RoomNodeSO HandleMouseOverNode(Event e)
         {
             foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
             {
@@ -129,7 +164,7 @@ namespace DungGunCore
         }
 
 
-        private void HandleMouseDownEven(Event e)
+        private void HandleMouseDownEvent(Event e)
         {
 
            if (e.button == 1) // Right click
@@ -137,6 +172,42 @@ namespace DungGunCore
                 ShowContextMenu(e.mousePosition);
             }
         }
+
+        private void HandleMouseDragEvent(Event e)
+        {
+            if (e.button == 1)
+            {
+                HandleRightMouseDrag(e);
+            }
+        }
+
+        private void HandleMouseUpEvent(Event e)
+        {
+            if (e.button == 1 && _roomNodeGraph.startNode != null)
+            {
+                RoomNodeSO roomNode = HandleMouseOverNode(e);  //Retrieve the node under the mouse cursor when the button is released
+
+                if (roomNode != null && roomNode != _roomNodeGraph.startNode)
+                {
+                    if (_roomNodeGraph.startNode.AddChildID(roomNode.id) == true)
+                    {
+                        roomNode.AddParentID(_roomNodeGraph.startNode.id);
+                    }
+                }
+
+                ClearDraggedLine();
+            }
+        }
+
+        private void HandleRightMouseDrag(Event e)
+        {
+            if (_roomNodeGraph.startNode != null)
+            {
+                _roomNodeGraph.endOfLinePosition += e.delta;
+                GUI.changed = true;
+            }
+        }
+
 
         /// <summary>
         /// Create custom context menus and dropdown menus
@@ -172,6 +243,52 @@ namespace DungGunCore
 
             AssetDatabase.AddObjectToAsset(newRoomNode, _roomNodeGraph); //Scriptable object can be saved in another scriptable object
             AssetDatabase.SaveAssets();
+
+            _roomNodeGraph.OnValidate();
+        }
+
+        /// <summary>
+        /// Undo the unconnected dragged line when the mouse is released.
+        /// </summary>
+        private void ClearDraggedLine()
+        {
+            _roomNodeGraph.startNode = null;
+            _roomNodeGraph.endOfLinePosition = Vector2.zero;
+            GUI.changed = true;
+        }
+
+        // ...
+
+        private void DrawNodeConnections()
+        {
+            foreach (RoomNodeSO parentNode in _roomNodeGraph.roomNodeList)
+            {
+                foreach (string childID in parentNode.childrenID)
+                {
+                    RoomNodeSO childNode = _roomNodeGraph.roomNodeDict[childID];
+                    GenerateConnectionGraph(parentNode, childNode);
+                }
+            }
+        }
+
+        private void GenerateConnectionGraph(RoomNodeSO parentNode, RoomNodeSO childNode)
+        {
+            Vector2 startPosition = parentNode.rect.center;
+            Vector2 endPosition = childNode.rect.center;
+            
+            Handles.DrawBezier(startPosition, endPosition, startPosition, endPosition, Color.white, null, _connectionLineWidth);
+
+
+            Vector2 midPosition = (endPosition + startPosition) / 2f;
+            Vector2 direction = endPosition - startPosition;
+            Vector2 arrowTailPoint1 = midPosition - new Vector2(-direction.y, direction.x).normalized * _connectionLineWidth * 2;
+            Vector2 arrowTailPoint2 = midPosition + new Vector2(-direction.y, direction.x).normalized * _connectionLineWidth * 2;
+            Vector2 arrowHeadPoint = midPosition + direction.normalized * _connectionLineWidth * 2;
+
+            Handles.DrawBezier(arrowHeadPoint, arrowTailPoint1, arrowHeadPoint, arrowTailPoint1, Color.white, null, _connectionLineWidth);
+            Handles.DrawBezier(arrowHeadPoint, arrowTailPoint2, arrowHeadPoint, arrowTailPoint2, Color.white, null, _connectionLineWidth);
+
+            GUI.changed = true;
         }
 
         private void DrawRoomNodes()
