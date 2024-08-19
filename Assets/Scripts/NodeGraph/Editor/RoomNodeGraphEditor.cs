@@ -12,6 +12,7 @@ namespace DungGunCore
     public class RoomNodeGraphEditor : EditorWindow
     {
         private GUIStyle _nodeStyle;  
+        private GUIStyle _selectedNodeStyle;
         
         private static RoomNodeGraphSO _roomNodeGraph;
         private RoomNodeSO _hoverRoomNode;
@@ -26,7 +27,7 @@ namespace DungGunCore
         private const int _nodeBorder = 12;
         #endregion
 
-        [MenuItem("Toom Node Graph Editor", menuItem = "Window/Dungeon Editor/Room Node Graph Editor")]
+        [MenuItem("Room Node Graph Editor", menuItem = "Window/Dungeon Editor/Room Node Graph Editor")]
         
         /// <summary> 
         /// Initialize the graph editor window 
@@ -50,6 +51,7 @@ namespace DungGunCore
             if (roomNodeGraph != null)
             {
                 OpenWindow();
+
                 _roomNodeGraph = roomNodeGraph;
                 return true;
             }
@@ -60,13 +62,31 @@ namespace DungGunCore
         // Called when the window is opened
         private void OnEnable() 
         {
+            SetUpNodesStyle();
+
+            Selection.selectionChanged += InspectorSelectionChange;
+            _roomNodeTypeList = GameResources.Instance.roomNodeTypeList;
+        }
+
+        private void OnDisable()
+        {
+            Selection.selectionChanged -= InspectorSelectionChange;
+        }
+
+        private void SetUpNodesStyle()
+        {
             _nodeStyle = new GUIStyle();
             _nodeStyle.normal.background = EditorGUIUtility.Load("node2") as Texture2D;
             _nodeStyle.normal.textColor = Color.white;
             _nodeStyle.border = new RectOffset(_nodeBorder, _nodeBorder, _nodeBorder, _nodeBorder);
-            _nodeStyle.padding = new RectOffset(_nodePadding, _nodePadding, _nodePadding, _nodePadding);  
+            _nodeStyle.padding = new RectOffset(_nodePadding, _nodePadding, _nodePadding, _nodePadding);
 
-            _roomNodeTypeList = GameResources.Instance.roomNodeTypeList;
+
+            _selectedNodeStyle = new GUIStyle();
+            _selectedNodeStyle.normal.background = EditorGUIUtility.Load("node2 on") as Texture2D;
+            _selectedNodeStyle.normal.textColor = Color.white;
+            _selectedNodeStyle.border = new RectOffset(_nodeBorder, _nodeBorder, _nodeBorder, _nodeBorder);
+            _selectedNodeStyle.padding = new RectOffset(_nodePadding, _nodePadding, _nodePadding, _nodePadding);
         }
 
         // Handle creating nodes
@@ -77,7 +97,7 @@ namespace DungGunCore
            {
                DrawDraggedLine();
                HandleEventDetection(Event.current);
-               DrawNodeConnections();
+               SetupNodesConnection();
                DrawRoomNodes();
            }
 
@@ -103,6 +123,7 @@ namespace DungGunCore
             }
         }
 
+        #region Graph Event
         private void HandleEventDetection(Event e)
         {
             if (_hoverRoomNode == null || _hoverRoomNode.isDragging == false)
@@ -167,7 +188,7 @@ namespace DungGunCore
         private void HandleMouseDownEvent(Event e)
         {
 
-           if (e.button == 1) // Right click
+            if (e.button == 1) // Right click
             {
                 ShowContextMenu(e.mousePosition);
             }
@@ -206,7 +227,8 @@ namespace DungGunCore
                 _roomNodeGraph.endOfLinePosition += e.delta;
                 GUI.changed = true;
             }
-        }
+        } 
+        #endregion
 
 
         /// <summary>
@@ -226,6 +248,11 @@ namespace DungGunCore
         /// <param name="mousePositionObj">Mouse position</param>
         private void AddRoomNode(object mousePositionObj)
         {
+            if (_roomNodeGraph.roomNodeList.Count == 0)
+            {
+                AddRoomNode(new Vector2(200f, 200f), _roomNodeTypeList.typeList.Find(x => x.isEntrance));
+            }
+
             AddRoomNode(mousePositionObj, _roomNodeTypeList.typeList.Find(t => t.isNone));
         }
 
@@ -257,28 +284,36 @@ namespace DungGunCore
             GUI.changed = true;
         }
 
-        // ...
-
-        private void DrawNodeConnections()
+        /// <summary>
+        ///  
+        /// </summary>
+        private void SetupNodesConnection()
         {
             foreach (RoomNodeSO parentNode in _roomNodeGraph.roomNodeList)
             {
                 foreach (string childID in parentNode.childrenID)
                 {
                     RoomNodeSO childNode = _roomNodeGraph.roomNodeDict[childID];
-                    GenerateConnectionGraph(parentNode, childNode);
+                    DrawConnectionLLine(parentNode, childNode);
                 }
             }
         }
 
-        private void GenerateConnectionGraph(RoomNodeSO parentNode, RoomNodeSO childNode)
+        /// <summary>
+        /// Create bezier curves between two nodes
+        /// </summary>
+        /// <param name="parentNode"></param>
+        /// <param name="childNode"></param>
+        private void DrawConnectionLLine(RoomNodeSO parentNode, RoomNodeSO childNode)
         {
+            // Draw a bezier curve between two nodes
             Vector2 startPosition = parentNode.rect.center;
             Vector2 endPosition = childNode.rect.center;
             
             Handles.DrawBezier(startPosition, endPosition, startPosition, endPosition, Color.white, null, _connectionLineWidth);
+            
 
-
+            // Draw an arrow in the middle of the bezier curve
             Vector2 midPosition = (endPosition + startPosition) / 2f;
             Vector2 direction = endPosition - startPosition;
             Vector2 arrowTailPoint1 = midPosition - new Vector2(-direction.y, direction.x).normalized * _connectionLineWidth * 2;
@@ -291,12 +326,33 @@ namespace DungGunCore
             GUI.changed = true;
         }
 
+        private void InspectorSelectionChange()
+        {
+            RoomNodeGraphSO roomNodeGraph = Selection.activeObject as RoomNodeGraphSO;
+
+            if (roomNodeGraph != null)
+            {
+                _roomNodeGraph = roomNodeGraph;
+                 GUI.changed = true;
+            }
+
+        }
+
         private void DrawRoomNodes()
         {
-                foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
-                {
-                    roomNode.Draw(_nodeStyle);
-                }
+            foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
+            {
+                 if (roomNode.isSelected == true)
+                 {
+                     roomNode.Draw(_selectedNodeStyle);
+                        
+                 }
+
+                 else
+                 {
+                     roomNode.Draw(_nodeStyle);
+                 }
+            }
 
             GUI.changed = true;
         }

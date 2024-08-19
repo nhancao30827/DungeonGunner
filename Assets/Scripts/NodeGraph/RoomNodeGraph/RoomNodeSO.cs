@@ -44,9 +44,17 @@ namespace DungGunCore
             GUILayout.BeginArea(rect, style);
             EditorGUI.BeginChangeCheck();
 
-            int selected = roomNodeTypeList.typeList.FindIndex(t => t == roomNodeType);
-            int selection = EditorGUILayout.Popup(selected, roomNodeTypeList.typeList.ConvertAll(t => t.roomNodeTypeName).ToArray());
-            roomNodeType = roomNodeTypeList.typeList[selection];
+            if (parentsID.Count > 0 || this.roomNodeType.isEntrance)
+            {
+                EditorGUILayout.LabelField(roomNodeType.roomNodeTypeName);
+            }
+
+            else
+            {
+                int selected = roomNodeTypeList.typeList.FindIndex(t => t == roomNodeType);
+                int selection = EditorGUILayout.Popup(selected, roomNodeTypeList.typeList.ConvertAll(t => t.roomNodeTypeName).ToArray());
+                roomNodeType = roomNodeTypeList.typeList[selection];
+            }
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -114,6 +122,7 @@ namespace DungGunCore
                 childrenID.Add(childId);
                 return true;
             }
+
             Debug.Log("Child already exists");
             return false;
         }
@@ -125,6 +134,7 @@ namespace DungGunCore
                 parentsID.Add(parentId);
                 return true;
             }
+
             Debug.Log("Parent already exists");
             return false;
         }
