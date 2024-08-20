@@ -14,7 +14,7 @@ namespace DungGunCore
         [Header("Select node type")]
         [Space(10)]
 
-        public bool isCooridor;
+        public bool isCorridor;
 
         public bool isCooridorHorizontal;
 

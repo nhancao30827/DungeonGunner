@@ -115,16 +115,70 @@ namespace DungGunCore
                 EditorUtility.SetDirty(this);
         }
 
-        public bool AddChildID(string childId)
+        
+
+
+        public bool AddChildID(string childID)
         {
-            if (!childrenID.Contains(childId))
+            if (IsChildValid(childID) == true)
             {
-                childrenID.Add(childId);
+                Debug.Log("Child added");
+                childrenID.Add(childID);
                 return true;
             }
-
-            Debug.Log("Child already exists");
+  
             return false;
+        }
+
+        public bool IsChildValid(string childID)
+        {
+            bool isConnectedBossNodeAlready = false;
+
+            foreach (RoomNodeSO roomNode in roomNodeGraph.roomNodeList)
+            {
+                if (roomNode.roomNodeType.isBossRoom && roomNode.childrenID.Count > 0)
+                {
+                    isConnectedBossNodeAlready = true;
+                }
+            }
+
+            if (roomNodeGraph.GetRoomNode(childID).roomNodeType.isBossRoom && isConnectedBossNodeAlready)
+            {
+                    return false;
+            }
+
+            if (roomNodeGraph.GetRoomNode(childID).roomNodeType.isNone || roomNodeGraph.GetRoomNode(childID).roomNodeType.isEntrance)
+            {
+                    return false;
+            }
+
+            if (childrenID.Contains(childID) || parentsID.Contains(childID))
+            {
+                    return false;
+            }
+
+            if (id == childID || roomNodeGraph.GetRoomNode(childID).parentsID.Count > 0)
+            {
+                    return false;
+            }
+
+            if (roomNodeGraph.GetRoomNode(childID).roomNodeType.isCorridor)
+            {
+                if (roomNodeType.isCorridor || childrenID.Count >= Settings.maxChildCorridors)
+                    {
+                        return false;
+                    }
+            }
+
+            if (!roomNodeGraph.GetRoomNode(childID).roomNodeType.isCorridor)
+            {
+                if (!roomNodeType.isCorridor || childrenID.Count > 0)
+                {
+                        return false;
+                }
+            }
+            
+            return true;
         }
 
         public bool AddParentID(string parentId)

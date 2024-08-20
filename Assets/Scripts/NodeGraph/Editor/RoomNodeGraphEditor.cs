@@ -51,7 +51,6 @@ namespace DungGunCore
             if (roomNodeGraph != null)
             {
                 OpenWindow();
-
                 _roomNodeGraph = roomNodeGraph;
                 return true;
             }

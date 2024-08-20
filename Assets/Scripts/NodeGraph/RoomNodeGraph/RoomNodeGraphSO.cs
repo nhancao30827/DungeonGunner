@@ -29,6 +29,16 @@ namespace DungGunCore
             }
         }
 
+        public RoomNodeSO GetRoomNode(string id)
+        {
+            if (roomNodeDict.TryGetValue(id, out RoomNodeSO roomNode) == true) // Is referred than ContainsKey for both check existence and get value
+            {
+                return roomNode;
+            }
+                
+            return null;
+        }
+
         public void SetNodeConnectionLine(RoomNodeSO startNode, Vector2 endOfLine)
         {
             this.startNode = startNode;
