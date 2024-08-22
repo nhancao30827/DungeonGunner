@@ -16,9 +16,9 @@ namespace DungGunCore
 
         public bool isCorridor;
 
-        public bool isCooridorHorizontal;
+        public bool isCorridorHorizontal;
 
-        public bool isCooridorVertical;
+        public bool isCorridorVertical;
 
         public bool isEntrance;
 

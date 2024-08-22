@@ -20,12 +20,12 @@ namespace DungGunCore
         
         private float _connectionLineWidth = 3f;
 
-        #region NODE LAYOUTS
+        // Node layout
         private const float _nodeWidth = 160f;
         private const float _nodeHeight = 75f;
         private const int _nodePadding = 25;
         private const int _nodeBorder = 12;
-        #endregion
+
 
         [MenuItem("Room Node Graph Editor", menuItem = "Window/Dungeon Editor/Room Node Graph Editor")]
         
@@ -70,6 +70,20 @@ namespace DungGunCore
         private void OnDisable()
         {
             Selection.selectionChanged -= InspectorSelectionChange;
+        }
+
+        /// <summary>
+        /// Create a new room node in the graph
+        /// </summary>
+        /// <param name="mousePositionObj">Mouse position</param>
+        private void AddRoomNode(object mousePositionObj)
+        {
+            if (_roomNodeGraph.roomNodeList.Count == 0)
+            {
+                AddRoomNode(new Vector2(200f, 200f), _roomNodeTypeList.typeList.Find(x => x.isEntrance));
+            }
+
+            AddRoomNode(mousePositionObj, _roomNodeTypeList.typeList.Find(t => t.isNone));
         }
 
         private void SetUpNodesStyle()
@@ -122,7 +136,6 @@ namespace DungGunCore
             }
         }
 
-        #region Graph Event
         private void HandleEventDetection(Event e)
         {
             if (_hoverRoomNode == null || _hoverRoomNode.isDragging == false)
@@ -134,7 +147,6 @@ namespace DungGunCore
             {
                 HandleGraphEvents(e);
             }
-
             else
             {
                 _hoverRoomNode.HandleNodeEvents(e);
@@ -180,6 +192,7 @@ namespace DungGunCore
                     return roomNode;
                 }
             }
+
             return null;
         }
 
@@ -190,6 +203,11 @@ namespace DungGunCore
             if (e.button == 1) // Right click
             {
                 ShowContextMenu(e.mousePosition);
+            }
+            else if (e.button == 0) // Left click
+            {
+                ClearDraggedLine();
+                ClearAllSelectedNodes();
             }
         }
 
@@ -227,7 +245,6 @@ namespace DungGunCore
                 GUI.changed = true;
             }
         } 
-        #endregion
 
 
         /// <summary>
@@ -238,21 +255,17 @@ namespace DungGunCore
         {
             GenericMenu contextMenu = new GenericMenu(); 
             contextMenu.AddItem(new GUIContent("Add Room Node"), false, () => { AddRoomNode(mousePosition); });
+            
+            contextMenu.AddSeparator("");
+            contextMenu.AddItem(new GUIContent("Select All Nodes"), false, () => { SelectAllNodes(); });
+
+            contextMenu.AddSeparator("");
+            contextMenu.AddItem(new GUIContent("Delete Selected Nodes"), false, () => { DeleteSelectedNode(); });
+
+            contextMenu.AddSeparator("");
+            contextMenu.AddItem(new GUIContent("Delete Selected Connection "), false, () => { DeleteSelectedConnectionLines(); });
+
             contextMenu.ShowAsContext();
-        }
-
-        /// <summary>
-        /// Create a new room node in the graph
-        /// </summary>
-        /// <param name="mousePositionObj">Mouse position</param>
-        private void AddRoomNode(object mousePositionObj)
-        {
-            if (_roomNodeGraph.roomNodeList.Count == 0)
-            {
-                AddRoomNode(new Vector2(200f, 200f), _roomNodeTypeList.typeList.Find(x => x.isEntrance));
-            }
-
-            AddRoomNode(mousePositionObj, _roomNodeTypeList.typeList.Find(t => t.isNone));
         }
 
         /// <summary>
@@ -298,6 +311,74 @@ namespace DungGunCore
             }
         }
 
+        private void DeleteSelectedConnectionLines()
+        {
+            foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
+            {
+                if (roomNode.isSelected == true && roomNode.childrenID.Count > 0)
+                {
+                    for (int i = roomNode.childrenID.Count - 1; i >= 0; i--) // Modifying a collection while iterating over it using foreach will causes an InvalidOperationException
+                    {
+                        RoomNodeSO childNode = _roomNodeGraph.GetRoomNode(roomNode.childrenID[i]);
+                        
+                        if (childNode != null && childNode.isSelected == true)
+                        {
+                            roomNode.childrenID.Remove(childNode.id);
+                            childNode.parentsID.Remove(roomNode.id);
+                        }
+                    }
+                }
+            }
+
+            ClearAllSelectedNodes();
+        }
+
+        private void DeleteSelectedNode()
+        {
+            Queue<RoomNodeSO> nodeToRemove = new Queue<RoomNodeSO>();
+            int numberOfEntrance = _roomNodeGraph.roomNodeList.FindAll(x => x.roomNodeType.isEntrance).Count;
+
+            foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
+            {
+                if (roomNode.isSelected == true)
+                {
+                    if (roomNode.roomNodeType.isEntrance == true && numberOfEntrance < 2)
+                    {
+                        --numberOfEntrance;
+                        continue;
+                    }
+                    else
+                    {
+                        nodeToRemove.Enqueue(roomNode);
+                    }
+
+                    foreach (string childID in roomNode.childrenID)
+                    {
+                        RoomNodeSO childNode = _roomNodeGraph.roomNodeDict[childID];
+                        childNode.parentsID.Remove(roomNode.id);
+                    }
+
+                    foreach (string parentID in roomNode.parentsID)
+                    {
+                        RoomNodeSO parentNode = _roomNodeGraph.roomNodeDict[parentID];
+                        parentNode.childrenID.Remove(roomNode.id);
+                    }
+
+                }
+            }
+
+            while (nodeToRemove.Count > 0)
+            {
+                RoomNodeSO roomNode = nodeToRemove.Dequeue();
+                _roomNodeGraph.roomNodeDict.Remove(roomNode.id);
+                _roomNodeGraph.roomNodeList.Remove(roomNode);
+                DestroyImmediate(roomNode, true);
+                AssetDatabase.SaveAssets();
+            }
+
+            ClearAllSelectedNodes();
+        }
+
         /// <summary>
         /// Create bezier curves between two nodes
         /// </summary>
@@ -337,6 +418,28 @@ namespace DungGunCore
 
         }
 
+        private void SelectAllNodes()
+        {
+            foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
+            {
+                roomNode.isSelected = true;
+                GUI.changed = true;
+            }
+        }
+
+        private void ClearAllSelectedNodes()
+        {
+            foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
+            {
+                if (roomNode.isSelected == true)
+                {
+                    roomNode.isSelected = false;
+
+                    GUI.changed = true; 
+                }
+            }
+        }
+
         private void DrawRoomNodes()
         {
             foreach (RoomNodeSO roomNode in _roomNodeGraph.roomNodeList)
@@ -344,9 +447,7 @@ namespace DungGunCore
                  if (roomNode.isSelected == true)
                  {
                      roomNode.Draw(_selectedNodeStyle);
-                        
                  }
-
                  else
                  {
                      roomNode.Draw(_nodeStyle);

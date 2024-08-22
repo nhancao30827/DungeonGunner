@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,9 +8,9 @@ namespace DungGunCore
 {
     public class RoomNodeSO : ScriptableObject
     {
-         public string id;
-         public List<string> parentsID= new List<string>();
-         public List<string> childrenID = new List<string>();
+        public string id;
+        public List<string> parentsID = new List<string>();
+        public List<string> childrenID = new List<string>();
         [HideInInspector] public RoomNodeGraphSO roomNodeGraph;
         [HideInInspector] public RoomNodeTypeListSO roomNodeTypeList;
         [HideInInspector] public Rect rect;
@@ -44,16 +45,24 @@ namespace DungGunCore
             GUILayout.BeginArea(rect, style);
             EditorGUI.BeginChangeCheck();
 
-            if (parentsID.Count > 0 || this.roomNodeType.isEntrance)
-            {
+            if (parentsID.Count > 0 || roomNodeType.isEntrance)
+            {               
                 EditorGUILayout.LabelField(roomNodeType.roomNodeTypeName);
             }
-
             else
             {
                 int selected = roomNodeTypeList.typeList.FindIndex(t => t == roomNodeType);
                 int selection = EditorGUILayout.Popup(selected, roomNodeTypeList.typeList.ConvertAll(t => t.roomNodeTypeName).ToArray());
                 roomNodeType = roomNodeTypeList.typeList[selection];
+
+                bool isCorridorChanged = roomNodeTypeList.typeList[selected].isCorridor != roomNodeTypeList.typeList[selection].isCorridor;
+                bool isBossRoomChanged = !roomNodeTypeList.typeList[selected].isBossRoom && roomNodeTypeList.typeList[selection].isBossRoom;
+                
+                if (isCorridorChanged || isBossRoomChanged)
+                {
+                    RemoveChildParentLinks();
+                }
+
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -62,6 +71,25 @@ namespace DungGunCore
             }
             GUILayout.EndArea();
         }
+
+        private void RemoveChildParentLinks()
+        {
+            if (childrenID.Count > 0)
+            {
+                for (int i = childrenID.Count - 1; i >= 0; i--)
+                {
+                    RoomNodeSO childNode = roomNodeGraph.GetRoomNode(childrenID[i]);
+
+                    if (childNode != null)
+                    {
+                        childNode.parentsID.Remove(id);
+                        childrenID.Remove(childrenID[i]);
+                    }
+                }
+
+            }
+        }
+
 
         /// <summary>
         /// Handle events emitted by the node
@@ -86,8 +114,8 @@ namespace DungGunCore
         }
 
         private void HandleMouseDownEvent(Event e)
-        {      
-            if (e.button == 0 ) // Left click
+        {
+            if (e.button == 0) // Left click
             {
                 Selection.activeObject = this;
                 isSelected = !isSelected;
@@ -109,14 +137,11 @@ namespace DungGunCore
 
         private void HandleMouseDragEvent(Event e)
         {
-                rect.position += e.delta;
-                isDragging = true;
-                e.Use();
-                EditorUtility.SetDirty(this);
+            rect.position += e.delta;
+            isDragging = true;
+            e.Use();
+            EditorUtility.SetDirty(this);
         }
-
-        
-
 
         public bool AddChildID(string childID)
         {
@@ -126,7 +151,7 @@ namespace DungGunCore
                 childrenID.Add(childID);
                 return true;
             }
-  
+
             return false;
         }
 
@@ -144,53 +169,53 @@ namespace DungGunCore
 
             if (roomNodeGraph.GetRoomNode(childID).roomNodeType.isBossRoom && isConnectedBossNodeAlready)
             {
-                    return false;
+                return false;
             }
 
             if (roomNodeGraph.GetRoomNode(childID).roomNodeType.isNone || roomNodeGraph.GetRoomNode(childID).roomNodeType.isEntrance)
             {
-                    return false;
+                return false;
             }
 
             if (childrenID.Contains(childID) || parentsID.Contains(childID))
             {
-                    return false;
+                return false;
             }
 
             if (id == childID || roomNodeGraph.GetRoomNode(childID).parentsID.Count > 0)
             {
-                    return false;
+                return false;
             }
 
             if (roomNodeGraph.GetRoomNode(childID).roomNodeType.isCorridor)
             {
                 if (roomNodeType.isCorridor || childrenID.Count >= Settings.maxChildCorridors)
-                    {
-                        return false;
-                    }
+                {
+                    return false;
+                }
             }
 
             if (!roomNodeGraph.GetRoomNode(childID).roomNodeType.isCorridor)
             {
                 if (!roomNodeType.isCorridor || childrenID.Count > 0)
                 {
-                        return false;
+                    return false;
                 }
             }
-            
+
             return true;
         }
 
-        public bool AddParentID(string parentId)
+        public bool AddParentID(string parentID)
         {
-            if (!parentsID.Contains(parentId))
+            if (!parentsID.Contains(parentID))
             {
-                parentsID.Add(parentId);
+                parentsID.Add(parentID);
                 return true;
             }
 
-            Debug.Log("Parent already exists");
             return false;
         }
+
     }
 }
