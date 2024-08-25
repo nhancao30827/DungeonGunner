@@ -26,6 +26,11 @@ namespace DungGunCore
         private const int _nodePadding = 25;
         private const int _nodeBorder = 12;
 
+        private Vector2 _graphOffSet;
+        private Vector2 _graphDrag;
+
+        private const float _gridSmall = 25f;
+        private const float _gridLarge = 100f;
 
         [MenuItem("Room Node Graph Editor", menuItem = "Window/Dungeon Editor/Room Node Graph Editor")]
         
@@ -108,6 +113,9 @@ namespace DungGunCore
 
            if (_roomNodeGraph != null)
            {
+               DrawBackgroundGrid(_gridSmall, 0.2f, Color.gray);
+               DrawBackgroundGrid(_gridLarge, 0.3f, Color.gray);
+
                DrawDraggedLine();
                HandleEventDetection(Event.current);
                SetupNodesConnection();
@@ -138,6 +146,8 @@ namespace DungGunCore
 
         private void HandleEventDetection(Event e)
         {
+            _graphDrag = Vector2.zero;
+
             if (_hoverRoomNode == null || _hoverRoomNode.isDragging == false)
             {
                 _hoverRoomNode = HandleMouseOverNode(e);
@@ -217,6 +227,10 @@ namespace DungGunCore
             {
                 HandleRightMouseDrag(e);
             }
+            else if (e.button == 0)
+            {
+                HandleLeftMouseDrag(e.delta);
+            }
         }
 
         private void HandleMouseUpEvent(Event e)
@@ -244,7 +258,22 @@ namespace DungGunCore
                 _roomNodeGraph.endOfLinePosition += e.delta;
                 GUI.changed = true;
             }
-        } 
+        }
+
+        private void HandleLeftMouseDrag(Vector2 delta)
+        {
+            _graphDrag = delta;
+
+            for (int i = 0; i < _roomNodeGraph.roomNodeList.Count; i++)
+            {
+                RoomNodeSO roomNode = _roomNodeGraph.roomNodeList[i];
+
+                roomNode.rect.position += delta;
+                EditorUtility.SetDirty(roomNode);
+            }
+
+            GUI.changed = true;
+        }
 
 
         /// <summary>
@@ -404,6 +433,30 @@ namespace DungGunCore
             Handles.DrawBezier(arrowHeadPoint, arrowTailPoint2, arrowHeadPoint, arrowTailPoint2, Color.white, null, _connectionLineWidth);
 
             GUI.changed = true;
+        }
+
+        private void DrawBackgroundGrid(float gridSize, float gridOpacity, Color gridColor)
+        {
+            int vertialLines = Mathf.CeilToInt(position.width + gridSize / gridSize);
+            int horizontalLines = Mathf.CeilToInt(position.height + gridSize / gridSize);
+
+            Handles.color = new Color(gridColor.r, gridColor.g, gridColor.b, gridOpacity);
+
+            _graphOffSet += _graphDrag * 0.5f;
+
+            Vector3 gridOffet = new Vector3(_graphOffSet.x % gridSize, _graphOffSet.y % gridSize, 0);
+
+            for (int i = 0; i < vertialLines; i++)
+            {
+                Handles.DrawLine(new Vector3(gridSize * i, -gridSize, 0) + gridOffet, new Vector3(gridSize * i, position.height, 0f) + gridOffet);
+            }
+
+            for (int i = 0; i < horizontalLines; i++)
+            {
+                Handles.DrawLine(new Vector3(-gridSize, gridSize * i, 0) + gridOffet, new Vector3(position.width, gridSize * i, 0f) + gridOffet);
+            }
+
+            Handles.color = Color.white;
         }
 
         private void InspectorSelectionChange()

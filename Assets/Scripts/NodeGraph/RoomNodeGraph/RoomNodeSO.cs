@@ -52,7 +52,8 @@ namespace DungGunCore
             else
             {
                 int selected = roomNodeTypeList.typeList.FindIndex(t => t == roomNodeType);
-                int selection = EditorGUILayout.Popup(selected, roomNodeTypeList.typeList.ConvertAll(t => t.roomNodeTypeName).ToArray());
+                //int selection = EditorGUILayout.Popup(selected, roomNodeTypeList.typeList.FindAll(t => t.displayInEditor).ConvertAll(t => t.roomNodeTypeName).ToArray());
+                int selection = EditorGUILayout.Popup("", selected, GetRoomNodeTypesToDisplay());
                 roomNodeType = roomNodeTypeList.typeList[selection];
 
                 bool isCorridorChanged = roomNodeTypeList.typeList[selected].isCorridor != roomNodeTypeList.typeList[selection].isCorridor;
@@ -62,7 +63,6 @@ namespace DungGunCore
                 {
                     RemoveChildParentLinks();
                 }
-
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -70,6 +70,21 @@ namespace DungGunCore
                 EditorUtility.SetDirty(this);
             }
             GUILayout.EndArea();
+        }
+
+        public string[] GetRoomNodeTypesToDisplay()
+        {
+            string[] roomArray = new string[roomNodeTypeList.typeList.Count];
+
+            for (int i = 0; i < roomNodeTypeList.typeList.Count; i++)
+            {
+                if (roomNodeTypeList.typeList[i].displayInEditor)
+                {
+                    roomArray[i] = roomNodeTypeList.typeList[i].roomNodeTypeName;
+                }
+            }
+
+            return roomArray;
         }
 
         private void RemoveChildParentLinks()
